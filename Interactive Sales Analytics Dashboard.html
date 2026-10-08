@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sales Analytics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f6f1ea;--card:#fff;--ink:#2d2118;--mut:#7d6b5d;--line:#e6dccf;--brand:#6f4e37;--acc:#c8873a;--up:#2e8b57;--dn:#c0392b;--side:#3b2a1e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1511;--card:#2a201a;--ink:#f1e8de;--mut:#b5a393;--line:#44352b;--side:#120d0a}}
+:root[data-theme="dark"]{--bg:#1c1511;--card:#2a201a;--ink:#f1e8de;--mut:#b5a393;--line:#44352b;--side:#120d0a}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 'Noto Sans Thai',system-ui,sans-serif;display:flex;min-height:100vh}
+nav{width:200px;background:var(--side);color:#e9dccd;padding:16px 10px;flex:none;position:sticky;top:0;height:100vh}
+nav h1{font-size:16px;margin:4px 8px 16px;color:#fff}
+nav a{display:block;padding:9px 12px;border-radius:8px;cursor:pointer;color:#cdbba8}
+nav a.on,nav a:hover{background:var(--brand);color:#fff}
+main{flex:1;min-width:0;padding:16px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:end;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.bar label{font-size:11px;color:var(--mut);display:flex;flex-direction:column;gap:2px}
+input,select,button{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);max-width:150px}
+input[type=number]{width:80px}
+button{cursor:pointer;background:var(--brand);color:#fff;border:0}button.g{background:var(--bg);color:var(--ink);border:1px solid var(--line)}button:disabled{opacity:.4;cursor:default}
+.crumb{display:flex;gap:6px;align-items:center;margin:0 0 12px;color:var(--mut);flex-wrap:wrap}.crumb b{color:var(--ink)}.crumb a{cursor:pointer;color:var(--acc)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(12,1fr)}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;grid-column:span 12;min-width:0;display:none}
+body[data-v=d] .sec.d,body[data-v=b] .sec.b,body[data-v=p] .sec.p,body[data-v=t] .sec.t,body[data-v=f] .sec.f,body[data-v=x] .sec.x{display:block}
+.sec.k{display:block;background:none;border:0;padding:0}
+@media(min-width:1000px){.sec.h{grid-column:span 6}}
+.sec h3{margin:0 0 8px;font-size:14px;color:var(--brand);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cv{position:relative;height:280px}
+.kp{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.kc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kc small{color:var(--mut)}.kc .v{font-size:20px;font-weight:700}.up{color:var(--up)}.dn{color:var(--dn)}.mu{color:var(--mut)}
+.ins div{padding:8px 10px;border-left:4px solid var(--acc);background:var(--bg);border-radius:6px;margin-bottom:6px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;white-space:nowrap}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child,td.l,th.l{text-align:left}
+th{color:var(--mut);cursor:pointer;font-weight:600;user-select:none}tr.c:hover{background:var(--bg);cursor:pointer}
+.pg{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap}
+.bd{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:9}.bd.on{display:flex}
+.md{background:var(--card);padding:20px;border-radius:14px;min-width:280px;max-width:92vw}
+@media(max-width:760px){body{flex-direction:column}nav{width:100%;height:auto;position:static;display:flex;overflow-x:auto;gap:4px;padding:8px}nav h1{display:none}nav a{white-space:nowrap}}
+</style></head><body data-v="d">
+<nav><h1>☕ Sales Analytics</h1>
+<a data-v="d" class="on">Dashboard</a><a data-v="b">Branch Analysis</a><a data-v="p">Product Analysis</a><a data-v="t">Sales Trend</a><a data-v="f">Profit Analysis</a><a data-v="x">Transaction Details</a></nav>
+<main>
+<!-- ===== FILTER BAR ===== -->
+<div class="bar">
+<label>จากวันที่<input type="date" id="from"></label><label>ถึงวันที่<input type="date" id="to"></label>
+<label>สาขา<select id="branch"></select></label><label>สินค้า<select id="product"></select></label>
+<label>หมวดหมู่<select id="cat"></select></label>
+<label>ราคา ≥<input type="number" id="pmin" placeholder="ต่ำสุด"></label><label>ราคา ≤<input type="number" id="pmax" placeholder="สูงสุด"></label>
+<label>สถานะการขาย<select id="status"></select></label>
+<button class="g" id="p7">7 วันล่าสุด</button><button class="g" id="p16">16 วัน</button><button class="g" id="pall">ทั้งหมด</button>
+<button class="g" id="rst">ล้างตัวกรอง</button><button class="g" id="theme">◐</button>
+</div>
+<div class="crumb"><button id="back" class="g">← Back</button><span id="crumb"></span></div>
+<div class="grid">
+<div class="sec k"><div class="kp" id="kpi"></div></div>
+<div class="sec d ins"><h3>💡 AI / Smart Insights</h3><div id="ins"></div></div>
+<div class="sec d f"><h3>Advanced Analytics</h3><div class="kp" id="adv"></div></div>
+<div class="sec d b p t h"><h3>แนวโน้มยอดขาย <select id="grain"><option value="d">รายวัน</option><option value="w">รายสัปดาห์</option><option value="m">รายเดือน</option></select></h3><div class="cv"><canvas id="cTrend"></canvas></div></div>
+<div class="sec d b h"><h3>รายได้แต่ละสาขา (คลิกเพื่อเจาะลึก)</h3><div class="cv"><canvas id="cBranch"></canvas></div></div>
+<div class="sec d b p h"><h3>ยอดขายสินค้าแต่ละสาขา (Stacked)</h3><div class="cv"><canvas id="cStack"></canvas></div></div>
+<div class="sec d p h"><h3>สัดส่วนรายได้ตามสินค้า</h3><div class="cv"><canvas id="cDonut"></canvas></div></div>
+<div class="sec d f h"><h3>รายได้ / ต้นทุน / กำไร ตามสินค้า</h3><div class="cv"><canvas id="cProfit"></canvas></div></div>
+<div class="sec d f h"><h3>Scatter: รายได้ vs กำไร (แต่ละรายการ)</h3><div class="cv"><canvas id="cScatter"></canvas></div></div>
+<div class="sec b"><h3>Branch Analytics</h3><div class="tw" id="tBranch"></div></div>
+<div class="sec b"><h3>สินค้าขายดี / ขายได้น้อย <span class="mu" id="bwNote"></span></h3><div class="tw" id="tBW"></div></div>
+<div class="sec p"><h3>Product Analytics</h3><div class="tw" id="tProd"></div></div>
+<div class="sec p"><h3>ยอดขายแยกตามสาขา <span class="mu" id="pbNote"></span></h3><div class="tw" id="tPB"></div></div>
+<div class="sec x"><h3>Transaction Detail
+<span><input id="q" placeholder="ค้นหา..."> <select id="size"><option>10</option><option>25</option><option>50</option><option>100</option></select> <button id="csv">Export CSV</button></span></h3>
+<div class="tw" id="tTx"></div><div class="pg"><span id="pinfo" class="mu"></span><span><button class="g" id="pv">‹</button> <span id="pn"></span> <button class="g" id="nx">›</button></span></div></div>
+</div></main>
+<div class="bd" id="bd"><div class="md" id="md"></div></div>
+
+<script>
+/* ============ 1. DATA LAYER ============
+   RAW = [id, date, branch, product, category, units, price/unit, cost/unit]
+   Replace with fetch()/API results later; everything else is computed from TX. */
+const RAW=[["S001","2026-08-01","มหาวิทยาลัย","อเมริกาโน","กาแฟ",14,60,20],["S002","2026-08-01","สำนักงาน","ชาไทย","เครื่องดื่มอื่น",6,55,18],["S003","2026-08-01","ห้างสรรพสินค้า","บราวนี","เบเกอรี",5,55,22],["S004","2026-08-01","มหาวิทยาลัย","ลาเต้","กาแฟ",7,75,28],["S005","2026-08-02","สำนักงาน","โกโก้","เครื่องดื่มอื่น",5,65,25],["S006","2026-08-02","ห้างสรรพสินค้า","ชีสเค้ก","เบเกอรี",4,110,72],["S007","2026-08-02","มหาวิทยาลัย","คาปูชิโน","กาแฟ",20,75,27],["S008","2026-08-03","สำนักงาน","ครัวซองต์","เบเกอรี",6,85,60],["S009","2026-08-03","ห้างสรรพสินค้า","ลาเต้","กาแฟ",9,75,28],["S010","2026-08-03","มหาวิทยาลัย","โกโก้","เครื่องดื่มอื่น",13,65,25],["S011","2026-08-04","สำนักงาน","ชีสเค้ก","เบเกอรี",13,110,72],["S012","2026-08-04","ห้างสรรพสินค้า","คาปูชิโน","กาแฟ",12,75,27],["S013","2026-08-04","มหาวิทยาลัย","ครัวซองต์","เบเกอรี",16,85,60],["S014","2026-08-05","สำนักงาน","อเมริกาโน","กาแฟ",8,60,20],["S015","2026-08-05","ห้างสรรพสินค้า","ชาไทย","เครื่องดื่มอื่น",9,55,18],["S016","2026-08-05","มหาวิทยาลัย","บราวนี","เบเกอรี",19,55,22],["S017","2026-08-05","สำนักงาน","คาปูชิโน","กาแฟ",5,75,27],["S018","2026-08-06","ห้างสรรพสินค้า","ครัวซองต์","เบเกอรี",2,85,60],["S019","2026-08-06","มหาวิทยาลัย","อเมริกาโน","กาแฟ",16,60,20],["S020","2026-08-06","สำนักงาน","ชาไทย","เครื่องดื่มอื่น",6,55,18],["S021","2026-08-07","ห้างสรรพสินค้า","บราวนี","เบเกอรี",9,55,22],["S022","2026-08-07","มหาวิทยาลัย","ลาเต้","กาแฟ",19,75,28],["S023","2026-08-07","สำนักงาน","โกโก้","เครื่องดื่มอื่น",9,65,25],["S024","2026-08-08","ห้างสรรพสินค้า","ชีสเค้ก","เบเกอรี",4,110,72],["S025","2026-08-08","มหาวิทยาลัย","ชาไทย","เครื่องดื่มอื่น",8,55,18],["S026","2026-08-08","สำนักงาน","บราวนี","เบเกอรี",14,55,22],["S027","2026-08-09","ห้างสรรพสินค้า","ลาเต้","กาแฟ",9,75,28],["S028","2026-08-09","มหาวิทยาลัย","โกโก้","เครื่องดื่มอื่น",11,65,25],["S029","2026-08-09","สำนักงาน","ชีสเค้ก","เบเกอรี",13,110,72],["S030","2026-08-09","ห้างสรรพสินค้า","คาปูชิโน","กาแฟ",6,75,27],["S031","2026-08-10","มหาวิทยาลัย","ครัวซองต์","เบเกอรี",12,85,60],["S032","2026-08-10","สำนักงาน","อเมริกาโน","กาแฟ",6,60,20],["S033","2026-08-10","ห้างสรรพสินค้า","โกโก้","เครื่องดื่มอื่น",11,65,25],["S034","2026-08-11","มหาวิทยาลัย","ชีสเค้ก","เบเกอรี",13,110,72],["S035","2026-08-11","สำนักงาน","คาปูชิโน","กาแฟ",3,75,27],["S036","2026-08-11","ห้างสรรพสินค้า","ครัวซองต์","เบเกอรี",12,85,60],["S037","2026-08-12","มหาวิทยาลัย","อเมริกาโน","กาแฟ",14,60,20],["S038","2026-08-12","สำนักงาน","ชาไทย","เครื่องดื่มอื่น",14,55,18],["S039","2026-08-12","ห้างสรรพสินค้า","บราวนี","เบเกอรี",3,55,22],["S040","2026-08-13","มหาวิทยาลัย","ลาเต้","กาแฟ",13,75,28],["S041","2026-08-13","สำนักงาน","ครัวซองต์","เบเกอรี",9,85,60],["S042","2026-08-13","ห้างสรรพสินค้า","อเมริกาโน","กาแฟ",10,60,20],["S043","2026-08-14","มหาวิทยาลัย","ชาไทย","เครื่องดื่มอื่น",14,55,18],["S044","2026-08-14","สำนักงาน","บราวนี","เบเกอรี",4,55,22],["S045","2026-08-14","ห้างสรรพสินค้า","ลาเต้","กาแฟ",3,75,28],["S046","2026-08-14","มหาวิทยาลัย","โกโก้","เครื่องดื่มอื่น",11,65,25],["S047","2026-08-15","สำนักงาน","ชีสเค้ก","เบเกอรี",3,110,72],["S048","2026-08-15","ห้างสรรพสินค้า","คาปูชิโน","กาแฟ",4,75,27],["S049","2026-08-15","มหาวิทยาลัย","บราวนี","เบเกอรี",12,55,22],["S050","2026-08-16","สำนักงาน","ลาเต้","กาแฟ",12,75,28],["S051","2026-08-16","ห้างสรรพสินค้า","โกโก้","เครื่องดื่มอื่น",11,65,25],["S052","2026-08-16","มหาวิทยาลัย","ชีสเค้ก","เบเกอรี",15,110,72],["S053","2026-08-17","สำนักงาน","คาปูชิโน","กาแฟ",11,75,27],["S054","2026-08-17","ห้างสรรพสินค้า","ครัวซองต์","เบเกอรี",2,85,60],["S055","2026-08-17","มหาวิทยาลัย","อเมริกาโน","กาแฟ",20,60,20],["S056","2026-08-18","สำนักงาน","ชาไทย","เครื่องดื่มอื่น",14,55,18],["S057","2026-08-18","ห้างสรรพสินค้า","ชีสเค้ก","เบเกอรี",9,110,72],["S058","2026-08-18","มหาวิทยาลัย","คาปูชิโน","กาแฟ",19,75,27],["S059","2026-08-18","สำนักงาน","ครัวซองต์","เบเกอรี",3,85,60],["S060","2026-08-19","ห้างสรรพสินค้า","อเมริกาโน","กาแฟ",12,60,20],["S061","2026-08-19","มหาวิทยาลัย","ชาไทย","เครื่องดื่มอื่น",10,55,18],["S062","2026-08-19","สำนักงาน","บราวนี","เบเกอรี",4,55,22],["S063","2026-08-20","ห้างสรรพสินค้า","ลาเต้","กาแฟ",15,75,28],["S064","2026-08-20","มหาวิทยาลัย","โกโก้","เครื่องดื่มอื่น",19,65,25],["S065","2026-08-20","สำนักงาน","อเมริกาโน","กาแฟ",5,60,20],["S066","2026-08-21","ห้างสรรพสินค้า","ชาไทย","เครื่องดื่มอื่น",2,55,18],["S067","2026-08-21","มหาวิทยาลัย","บราวนี","เบเกอรี",20,55,22],["S068","2026-08-21","สำนักงาน","ลาเต้","กาแฟ",14,75,28],["S069","2026-08-22","ห้างสรรพสินค้า","โกโก้","เครื่องดื่มอื่น",5,65,25],["S070","2026-08-22","มหาวิทยาลัย","ชีสเค้ก","เบเกอรี",13,110,72],["S071","2026-08-22","สำนักงาน","คาปูชิโน","กาแฟ",7,75,27],["S072","2026-08-23","ห้างสรรพสินค้า","ครัวซองต์","เบเกอรี",8,85,60],["S073","2026-08-23","มหาวิทยาลัย","ลาเต้","กาแฟ",10,75,28],["S074","2026-08-23","สำนักงาน","โกโก้","เครื่องดื่มอื่น",2,65,25],["S075","2026-08-23","ห้างสรรพสินค้า","ชีสเค้ก","เบเกอรี",9,110,72],["S076","2026-08-24","มหาวิทยาลัย","คาปูชิโน","กาแฟ",19,75,27],["S077","2026-08-24","สำนักงาน","ครัวซองต์","เบเกอรี",9,85,60],["S078","2026-08-24","ห้างสรรพสินค้า","อเมริกาโน","กาแฟ",12,60,20],["S079","2026-08-25","มหาวิทยาลัย","ชาไทย","เครื่องดื่มอื่น",8,55,18],["S080","2026-08-25","สำนักงาน","บราวนี","เบเกอรี",10,55,22],["S081","2026-08-25","ห้างสรรพสินค้า","คาปูชิโน","กาแฟ",7,75,27],["S082","2026-08-26","มหาวิทยาลัย","ครัวซองต์","เบเกอรี",9,85,60],["S083","2026-08-26","สำนักงาน","อเมริกาโน","กาแฟ",15,60,20],["S084","2026-08-26","ห้างสรรพสินค้า","ชาไทย","เครื่องดื่มอื่น",10,55,18],["S085","2026-08-27","มหาวิทยาลัย","บราวนี","เบเกอรี",8,55,22],["S086","2026-08-27","สำนักงาน","ลาเต้","กาแฟ",10,75,28],["S087","2026-08-27","ห้างสรรพสินค้า","โกโก้","เครื่องดื่มอื่น",11,65,25],["S088","2026-08-27","มหาวิทยาลัย","ชีสเค้ก","เบเกอรี",7,110,72],["S089","2026-08-28","สำนักงาน","ชาไทย","เครื่องดื่มอื่น",11,55,18],["S090","2026-08-28","ห้างสรรพสินค้า","บราวนี","เบเกอรี",2,55,22],["S091","2026-08-28","มหาวิทยาลัย","ลาเต้","กาแฟ",14,75,28],["S092","2026-08-29","สำนักงาน","โกโก้","เครื่องดื่มอื่น",10,65,25],["S093","2026-08-29","ห้างสรรพสินค้า","ชีสเค้ก","เบเกอรี",5,110,72],["S094","2026-08-29","มหาวิทยาลัย","คาปูชิโน","กาแฟ",7,75,27],["S095","2026-08-30","สำนักงาน","ครัวซองต์","เบเกอรี",15,85,60],["S096","2026-08-30","ห้างสรรพสินค้า","อเมริกาโน","กาแฟ",8,60,20],["S097","2026-08-30","มหาวิทยาลัย","โกโก้","เครื่องดื่มอื่น",20,65,25],["S098","2026-08-31","สำนักงาน","ชีสเค้ก","เบเกอรี",14,110,72],["S099","2026-08-31","ห้างสรรพสินค้า","คาปูชิโน","กาแฟ",5,75,27],["S100","2026-08-31","มหาวิทยาลัย","ครัวซองต์","เบเกอรี",15,85,60]];
+const TX=RAW.map(r=>({id:r[0],date:r[1],branch:r[2],product:r[3],cat:r[4],units:r[5],price:r[6],ucost:r[7]}));
+TX.forEach(t=>{t.rev=t.units*t.price;t.cost=t.units*t.ucost;t.profit=t.rev-t.cost;t.margin=t.profit/t.rev});
+/* Status is derived (source data has none): ผิดปกติ = units > mean+2SD of its product, Margin ต่ำ = margin<50% */
+(()=>{const g={};TX.forEach(t=>(g[t.product]=g[t.product]||[]).push(t.units));
+const st={};for(const p in g){const m=g[p].reduce((a,b)=>a+b)/g[p].length;st[p]=[m,Math.sqrt(g[p].reduce((a,b)=>a+(b-m)**2,0)/g[p].length)]}
+TX.forEach(t=>{const[m,s]=st[t.product];t.status=(s>0&&t.units>m+2*s)?'ผิดปกติ':t.margin<.5?'Margin ต่ำ':'ปกติ'})})();
+const uniq=k=>[...new Set(TX.map(t=>t[k]))].sort();
+const DMIN=TX.reduce((a,t)=>t.date<a?t.date:a,'9'),DMAX=TX.reduce((a,t)=>t.date>a?t.date:a,'0');
+
+/* ============ 2. HELPERS / CALCULATIONS ============ */
+const $=id=>document.getElementById(id),N=(v,d=0)=>(+v).toLocaleString('th-TH',{maximumFractionDigits:d,minimumFractionDigits:d}),B=v=>'฿'+N(v),P=v=>N(v*100,1)+'%';
+const sum=(a,k)=>a.reduce((s,t)=>s+t[k],0);
+const addDays=(d,n)=>{const x=new Date(d+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)};
+const diffDays=(a,b)=>Math.round((new Date(b)-new Date(a))/864e5);
+function stats(rows){const rev=sum(rows,'rev'),cost=sum(rows,'cost'),units=sum(rows,'units'),profit=rev-cost;return{rev,cost,units,profit,n:rows.length,margin:rev?profit/rev:0,aov:rows.length?rev/rows.length:0,asp:units?rev/units:0,upt:rows.length?units/rows.length:0}}
+function groupBy(rows,key){const m={};rows.forEach(t=>(m[t[key]]=m[t[key]]||[]).push(t));
+ const arr=Object.entries(m).map(([k,r])=>({k,...stats(r),rows:r}));arr.sort((a,b)=>b.rev-a.rev);arr.forEach((x,i)=>x.rank=i+1);return arr}
+const growth=(c,p)=>p?(c-p)/p:null;
+function delta(c,p,pts){if(p==null||!isFinite(c))return'<small class="mu">ไม่มีข้อมูลช่วงก่อนหน้า</small>';
+ const g=pts?(c-p)*100:growth(c,p);if(g==null)return'<small class="mu">—</small>';
+ return`<small class="${g>=0?'up':'dn'}">${g>=0?'▲':'▼'} ${N(Math.abs(pts?g:g*100),1)}${pts?' pt':'%'} vs ก่อนหน้า</small>`}
+
+/* ============ 3. STATE & FILTERING ============ */
+const DEF=()=>({from:addDays(DMAX,-15),to:DMAX,branch:'',product:'',cat:'',pmin:'',pmax:'',status:''});
+let F=DEF(),hist=[],view='d',sortK='date',sortD=-1,page=1,query='',charts={};
+function apply(f,from,to){return TX.filter(t=>t.date>=from&&t.date<=to&&(!f.branch||t.branch===f.branch)&&(!f.product||t.product===f.product)&&(!f.cat||t.cat===f.cat)&&(f.pmin===''||t.price>=+f.pmin)&&(f.pmax===''||t.price<=+f.pmax)&&(!f.status||t.status===f.status))}
+function drill(patch){hist.push({...F});Object.assign(F,patch);sync();render()}
+
+/* ============ 4. RENDER ============ */
+function render(){
+ const rows=apply(F,F.from,F.to),len=diffDays(F.from,F.to)+1,pTo=addDays(F.from,-1),pFrom=addDays(pTo,-(len-1));
+ const prev=pTo<DMIN?[]:apply(F,pFrom,pTo),S=stats(rows),Pv=prev.length?stats(prev):null;
+ const br=groupBy(rows,'branch'),pr=groupBy(rows,'product');
+ $('back').disabled=!hist.length;
+ $('crumb').innerHTML=`<a id="c0">Dashboard</a>`+(F.branch?` &gt; ${F.product?`<a id="c1">${F.branch}</a>`:`<b>${F.branch}</b>`}`:'')+(F.product?` &gt; <b>${F.product}</b>`:'');
+ $('c0').onclick=()=>{hist.push({...F});F={...F,branch:'',product:''};sync();render()};
+ if($('c1'))$('c1').onclick=()=>drill({product:''});
+ // KPI cards
+ const K=(l,v,d)=>`<div class="kc"><small>${l}</small><div class="v">${v}</div>${d||''}</div>`;
+ $('kpi').innerHTML=K('รายได้รวม',B(S.rev),delta(S.rev,Pv&&Pv.rev))+K('จำนวนหน่วยขาย',N(S.units),delta(S.units,Pv&&Pv.units))+K('กำไรขั้นต้น',B(S.profit),delta(S.profit,Pv&&Pv.profit))
+  +K('Profit Margin',P(S.margin),delta(S.margin,Pv&&Pv.margin,1))+K('Average Order Value',B(S.aov),delta(S.aov,Pv&&Pv.aov))
+  +K('สาขารายได้สูงสุด',br[0]?br[0].k:'-',br[0]?`<small class="mu">${B(br[0].rev)}</small>`:'')+K('สินค้ารายได้สูงสุด',pr[0]?pr[0].k:'-',pr[0]?`<small class="mu">${B(pr[0].rev)}</small>`:'');
+ // Advanced metrics
+ $('adv').innerHTML=K('Revenue Growth',Pv?P(growth(S.rev,Pv.rev)):'-')+K('Profit Growth',Pv?P(growth(S.profit,Pv.profit)):'-')+K('Profit Margin',P(S.margin))+K('Avg Selling Price',B(S.asp))
+  +K('Avg Units / Transaction',N(S.upt,2))+K('Revenue per Branch',B(br.length?S.rev/br.length:0))+K('Revenue per Product',B(pr.length?S.rev/pr.length:0))
+  +K('Contribution สูงสุด',pr[0]&&S.rev?`${pr[0].k} ${P(pr[0].rev/S.rev)}`:'-');
+ insights(rows,br,pr,S);
+ charts_(rows,br,pr);
+ tables(rows,br,pr,S);
+ tx(rows);
+}
+function insights(rows,br,pr,S){const L=[];
+ if(!rows.length){$('ins').innerHTML='<div>ไม่มีข้อมูลตามตัวกรองที่เลือก</div>';return}
+ L.push(`🟢 <b>${pr[0].k}</b> สร้างรายได้สูงสุด ${B(pr[0].rev)} (${P(pr[0].rev/S.rev)} ของรายได้รวม)`);
+ const avg=S.rev/br.length,low=br.filter(b=>b.rev<avg);
+ L.push(br.length>1?(low.length?`🔴 สาขาที่ต่ำกว่าค่าเฉลี่ย (${B(avg)}): ${low.map(b=>`<b>${b.k}</b> ${B(b.rev)}`).join(', ')}`:'🔴 ไม่มีสาขาต่ำกว่าค่าเฉลี่ย'):'🔴 เลือกเพียง 1 สาขา จึงไม่มีการเทียบค่าเฉลี่ยสาขา');
+ const lm=pr.filter(p=>p.margin<.5).sort((a,b)=>a.margin-b.margin);
+ L.push(lm.length?`🟡 สินค้า Margin ต่ำ (<50%): ${lm.map(p=>`<b>${p.k}</b> ${P(p.margin)}`).join(', ')}`:'🟡 ไม่มีสินค้าที่ Margin ต่ำกว่า 50%');
+ const days=[...new Set(rows.map(t=>t.date))].sort(),dr=days.map(d=>sum(rows.filter(t=>t.date===d),'rev')),h=Math.floor(dr.length/2);
+ if(h>=1){const a=dr.slice(0,h).reduce((x,y)=>x+y)/h,b=dr.slice(h).reduce((x,y)=>x+y)/(dr.length-h),g=growth(b,a);
+  L.push(g>=0?`📈 แนวโน้มยอดขายเพิ่มขึ้น: รายได้เฉลี่ยต่อวันครึ่งหลัง ${B(b)} สูงกว่าครึ่งแรก ${P(g)}`:`📉 แนวโน้มยอดขายลดลง: รายได้เฉลี่ยต่อวันครึ่งหลัง ${B(b)} ต่ำกว่าครึ่งแรก ${P(-g)}`)}
+ const top=[...pr].sort((a,b)=>b.profit-a.profit)[0];L.push(`⭐ ควรให้ความสำคัญ: <b>${top.k}</b> กำไรสูงสุด ${B(top.profit)} (Margin ${P(top.margin)})`);
+ const an=rows.filter(t=>t.status==='ผิดปกติ');
+ L.push(an.length?`⚠ พบรายการผิดปกติ ${an.length} รายการ (หน่วยสูงกว่าปกติ): ${an.slice(0,5).map(t=>`${t.id} (${t.product} ${t.units} หน่วย)`).join(', ')}`:'⚠ ไม่พบรายการผิดปกติ');
+ $('ins').innerHTML=L.map(x=>`<div>${x}</div>`).join('')}
+
+/* ---- charts ---- */
+const COL=['#6f4e37','#c8873a','#2e8b57','#d9534f','#4f7cac','#8e6bbf','#e0b04a','#4aa3a3'],PC={};uniq('product').forEach((p,i)=>PC[p]=COL[i%8]);
+function mk(id,cfg){if(charts[id])charts[id].destroy();cfg.options={responsive:true,maintainAspectRatio:false,animation:{duration:350},...cfg.options,plugins:{legend:{display:true,labels:{boxWidth:12}},...(cfg.options||{}).plugins}};
+ cfg.options.onHover=(e,el)=>e.native.target.style.cursor=el.length?'pointer':'default';charts[id]=new Chart($(id),cfg)}
+function bucket(d,m){if(m==='m')return d.slice(0,7);if(m==='w'){const x=new Date(d+'T00:00:00Z'),w=(x.getUTCDay()+6)%7;return addDays(d,-w)}return d}
+function charts_(rows,br,pr){const ct=getComputedStyle(document.body).color;Chart.defaults.color=ct;Chart.defaults.borderColor='#8883';
+ const g=$('grain').value,m={};rows.forEach(t=>{const k=bucket(t.date,g);m[k]=m[k]||{rev:0,profit:0};m[k].rev+=t.rev;m[k].profit+=t.profit});const ks=Object.keys(m).sort();
+ mk('cTrend',{type:'line',data:{labels:ks,datasets:[{label:'รายได้',data:ks.map(k=>m[k].rev),borderColor:'#6f4e37',backgroundColor:'#6f4e3722',fill:true,tension:.3},{label:'กำไร',data:ks.map(k=>m[k].profit),borderColor:'#2e8b57',tension:.3}]},
+  options:{onClick:(e,el)=>{if(el.length){const k=ks[el[0].index];if(g==='d')drill({from:k,to:k});else if(g==='w')drill({from:k,to:addDays(k,6)<F.to?addDays(k,6):F.to})}}}});
+ mk('cBranch',{type:'bar',data:{labels:br.map(b=>b.k),datasets:[{label:'รายได้',data:br.map(b=>b.rev),backgroundColor:'#c8873a'}]},options:{onClick:(e,el)=>el.length&&drill({branch:br[el[0].index].k,product:''})}});
+ const prods=[...new Set(rows.map(t=>t.product))].sort();
+ mk('cStack',{type:'bar',data:{labels:br.map(b=>b.k),datasets:prods.map(p=>({label:p,backgroundColor:PC[p],data:br.map(b=>sum(b.rows.filter(t=>t.product===p),'rev'))}))},
+  options:{scales:{x:{stacked:true},y:{stacked:true}},onClick:(e,el)=>el.length&&drill({branch:br[el[0].index].k,product:prods[el[0].datasetIndex]})}});
+ mk('cDonut',{type:'doughnut',data:{labels:pr.map(p=>p.k),datasets:[{data:pr.map(p=>p.rev),backgroundColor:pr.map(p=>PC[p.k])}]},options:{plugins:{legend:{position:'right'},tooltip:{callbacks:{label:c=>`${c.label}: ${B(c.raw)} (${P(c.raw/sum(rows,'rev'))})`}}},onClick:(e,el)=>el.length&&drill({product:pr[el[0].index].k})}});
+ mk('cProfit',{type:'bar',data:{labels:pr.map(p=>p.k),datasets:[{label:'รายได้',data:pr.map(p=>p.rev),backgroundColor:'#6f4e37'},{label:'ต้นทุน',data:pr.map(p=>p.cost),backgroundColor:'#d9534f'},{label:'กำไร',data:pr.map(p=>p.profit),backgroundColor:'#2e8b57'}]},options:{onClick:(e,el)=>el.length&&drill({product:pr[el[0].index].k})}});
+ mk('cScatter',{type:'scatter',data:{datasets:prods.map(p=>({label:p,backgroundColor:PC[p],data:rows.filter(t=>t.product===p).map(t=>({x:t.rev,y:t.profit,t}))}))},
+  options:{scales:{x:{title:{display:true,text:'รายได้ (฿)'}},y:{title:{display:true,text:'กำไร (฿)'}}},plugins:{tooltip:{callbacks:{label:c=>{const t=c.raw.t;return`${t.id} ${t.branch}: รายได้ ${B(t.rev)} กำไร ${B(t.profit)}`}}}},onClick:(e,el)=>el.length&&modal(charts.cScatter.data.datasets[el[0].datasetIndex].data[el[0].index].t)}})}
+
+/* ---- analytic tables ---- */
+function tbl(head,body){return`<table><tr>${head.map((h,i)=>`<th class="${i?'':'l'}">${h}</th>`).join('')}</tr>${body}</table>`}
+function tables(rows,br,pr,S){const tot=S.rev,avgB=br.length?tot/br.length:0;
+ const row=(x,cls,attr)=>`<tr class="c" data-${attr}="${x.k}"><td>${x.k}</td><td>${x.rank}</td><td>${B(x.rev)}</td><td>${N(x.units)}</td><td>${B(x.cost)}</td><td>${B(x.profit)}</td><td>${P(x.margin)}</td><td>${tot?P(x.rev/tot):'-'}</td>${cls(x)}</tr>`;
+ const H=['รายการ','Rank','รายได้','จำนวนขาย','ต้นทุน','กำไร','Margin','Contribution'];
+ $('tBranch').innerHTML=tbl([...H,'เทียบค่าเฉลี่ยสาขา'],br.map(x=>row(x,x=>`<td class="${x.rev>=avgB?'up':'dn'}">${avgB?N((x.rev/avgB-1)*100,1):0}%</td>`,'b')).join(''));
+ $('tProd').innerHTML=tbl([...H,'ราคาขายเฉลี่ย'],pr.map(x=>row(x,x=>`<td>${B(x.asp)}</td>`,'p')).join(''));
+ document.querySelectorAll('[data-b]').forEach(e=>e.onclick=()=>drill({branch:e.dataset.b,product:''}));
+ document.querySelectorAll('[data-p]').forEach(e=>e.onclick=()=>drill({product:e.dataset.p}));
+ $('bwNote').textContent=F.branch?`(สาขา ${F.branch})`:'(ทุกสาขา)';
+ const u=[...pr].sort((a,b)=>b.units-a.units),bw=(a,t)=>a.slice(0,3).map(x=>`<tr class="c" data-p="${x.k}"><td>${t}</td><td>${x.k}</td><td>${N(x.units)} หน่วย</td><td>${B(x.rev)}</td></tr>`).join('');
+ $('tBW').innerHTML=tbl(['ประเภท','สินค้า','จำนวนขาย','รายได้'],bw(u,'🏆 ขายดี')+bw([...u].reverse(),'🐢 ขายน้อย'));
+ document.querySelectorAll('#tBW [data-p]').forEach(e=>e.onclick=()=>drill({product:e.dataset.p}));
+ const pb=groupBy(rows,'branch');$('pbNote').textContent=F.product?`(${F.product})`:'(ทุกสินค้า)';
+ $('tPB').innerHTML=tbl(['สาขา','Rank','รายได้','จำนวนขาย','ต้นทุน','กำไร','Margin','Contribution'],pb.map(x=>row(x,()=>'','bb')).join(''));
+ document.querySelectorAll('[data-bb]').forEach(e=>e.onclick=()=>drill({branch:e.dataset.bb}))}
+
+/* ---- transaction table ---- */
+const COLS=[['date','วันที่'],['id','เลขที่บิล'],['branch','สาขา'],['product','สินค้า'],['units','จำนวน'],['price','ราคา/หน่วย'],['rev','ยอดขาย'],['cost','ต้นทุน'],['profit','กำไร'],['margin','Margin %'],['status','สถานะ']];
+function txRows(rows){const q=query.toLowerCase();let r=q?rows.filter(t=>Object.values(t).join(' ').toLowerCase().includes(q)):rows;
+ return [...r].sort((a,b)=>(a[sortK]>b[sortK]?1:a[sortK]<b[sortK]?-1:0)*sortD)}
+function tx(rows){const r=txRows(rows),sz=+$('size').value,pgs=Math.max(1,Math.ceil(r.length/sz));page=Math.min(page,pgs);
+ const sl=r.slice((page-1)*sz,page*sz);
+ $('tTx').innerHTML=`<table><tr>${COLS.map(c=>`<th class="${c[0]=='date'?'l':''}" data-s="${c[0]}">${c[1]}${sortK==c[0]?(sortD>0?' ▲':' ▼'):''}</th>`).join('')}</tr>`+
+  sl.map(t=>`<tr class="c" data-t="${t.id}"><td>${t.date}</td><td>${t.id}</td><td>${t.branch}</td><td>${t.product}</td><td>${t.units}</td><td>${B(t.price)}</td><td>${B(t.rev)}</td><td>${B(t.cost)}</td><td>${B(t.profit)}</td><td>${P(t.margin)}</td><td>${t.status}</td></tr>`).join('')+'</table>';
+ $('pinfo').textContent=`แสดง ${r.length?(page-1)*sz+1:0}-${Math.min(page*sz,r.length)} จาก ${r.length} รายการ`;$('pn').textContent=`${page}/${pgs}`;$('pv').disabled=page<=1;$('nx').disabled=page>=pgs;
+ document.querySelectorAll('[data-s]').forEach(e=>e.onclick=()=>{const k=e.dataset.s;sortD=sortK===k?-sortD:1;sortK=k;tx(rows)});
+ document.querySelectorAll('[data-t]').forEach(e=>e.onclick=()=>modal(TX.find(t=>t.id===e.dataset.t)));
+ $('csv').onclick=()=>{const h=COLS.map(c=>c[1]),l=r.map(t=>COLS.map(c=>c[0]=='margin'?(t.margin*100).toFixed(1):t[c[0]]).join(','));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+[h.join(','),...l].join('\n')],{type:'text/csv'}));a.download='transactions.csv';a.click()};
+ $('pv').onclick=()=>{page--;tx(rows)};$('nx').onclick=()=>{page++;tx(rows)}}
+function modal(t){$('md').innerHTML=`<h3>รายละเอียด ${t.id}</h3><p>วันที่ ${t.date}<br>สาขา ${t.branch} · ${t.product} (${t.cat})<br>จำนวน ${t.units} × ${B(t.price)} (ต้นทุน ${B(t.ucost)}/หน่วย)<br>ยอดขาย ${B(t.rev)} · ต้นทุน ${B(t.cost)} · กำไร ${B(t.profit)} (${P(t.margin)})<br>สถานะ: ${t.status}</p><button onclick="$('bd').classList.remove('on')">ปิด</button>`;$('bd').classList.add('on')}
+
+/* ============ 5. UI WIRING ============ */
+function fill(id,arr,all){$(id).innerHTML=`<option value="">${all}</option>`+arr.map(v=>`<option>${v}</option>`).join('')}
+fill('branch',uniq('branch'),'ทุกสาขา');fill('product',uniq('product'),'ทุกสินค้า');fill('cat',uniq('cat'),'ทุกหมวดหมู่');fill('status',['ปกติ','Margin ต่ำ','ผิดปกติ'],'ทุกสถานะ');
+$('from').min=$('to').min=DMIN;$('from').max=$('to').max=DMAX;
+function sync(){for(const k in F)$(k).value=F[k]}
+['from','to','branch','product','cat','pmin','pmax','status'].forEach(k=>$(k).onchange=()=>{F[k]=$(k).value;hist=[];page=1;render()});
+$('grain').onchange=render;$('size').onchange=()=>{page=1;render()};$('q').oninput=e=>{query=e.target.value;page=1;render()};
+$('back').onclick=()=>{if(hist.length){F=hist.pop();sync();render()}};
+$('rst').onclick=()=>{F=DEF();hist=[];sync();render()};
+$('pall').onclick=()=>{F.from=DMIN;F.to=DMAX;sync();render()};$('p7').onclick=()=>{F.from=addDays(DMAX,-6);F.to=DMAX;sync();render()};$('p16').onclick=()=>{F.from=addDays(DMAX,-15);F.to=DMAX;sync();render()};
+$('theme').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';render()};
+$('bd').onclick=e=>{if(e.target.id==='bd')$('bd').classList.remove('on')};
+document.querySelectorAll('nav a').forEach(a=>a.onclick=()=>{view=a.dataset.v;document.body.dataset.v=view;document.querySelectorAll('nav a').forEach(x=>x.classList.toggle('on',x===a));render()});
+sync();render();
+</script></body></html>
